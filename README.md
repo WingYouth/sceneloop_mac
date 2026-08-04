@@ -1,4 +1,4 @@
-# SceneLoop for Hermes
+# SceneLoop 
 
 SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用户只需向 Hermes 提供剧本和创作要求，SceneLoop 即可完成剧本视觉化适配、分镜规划、角色与场景资产生成、首帧生成和逐镜视频生成。
 
