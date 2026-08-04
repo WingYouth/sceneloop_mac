@@ -1,12 +1,12 @@
 # SceneLoop 
 
-SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用户只需向 Hermes 提供剧本和创作要求，SceneLoop 即可完成剧本视觉化适配、分镜规划、角色与场景资产生成、首帧生成和逐镜视频生成。
+SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用户只需向 Hermes / Openclaw 等 AI Agent 提供剧本和创作要求，SceneLoop 即可完成剧本视觉化适配、分镜规划、角色与场景资产生成、首帧生成和逐镜视频生成。
 
 本项目由 **西安文鳐网络信息科技有限责任公司** 开发。
 
 [访问 SceneLoop 产品官网](https://www.wenyaotech.com/products?category=aimanju&product=sceneloop)
 
-> 本文档适用于 SceneLoop Hermes Skill 的 macOS 版本。
+> 本文档适用于 SceneLoop Skill 的 macOS 版本。
 
 ## 核心能力
 
@@ -17,7 +17,6 @@ SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用�
 - 支持动画、3D、真人短剧等不同视觉方向。
 - 根据相邻镜头关系管理人物、场景和画面连续性。
 - 支持按镜头生成、断点续作和失败镜头重试。
-- 通过 Hermes 对话、Hermes Desktop 或接入的飞书机器人使用。
 
 ## 工作流程
 
@@ -35,7 +34,7 @@ SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用�
   -> 视频输出
 ```
 
-Hermes 负责与用户对话、收集参数和调用 SceneLoop。文本、图片和视频的正式生产必须由 SceneLoop 内部配置的模型完成，Hermes 不会使用自身模型替代生产步骤。
+Hermes 负责与用户对话、收集参数和调用 SceneLoop。文本、图片和视频的正式生产由 SceneLoop 内部配置的模型完成，Hermes 不会使用自身模型替代生产步骤。
 
 ## macOS 安装要求
 
@@ -48,7 +47,7 @@ Hermes 负责与用户对话、收集参数和调用 SceneLoop。文本、图片
 - 文本模型、图片模型和视频模型所需的 API Key。
 - 可访问模型服务和 SceneLoop License Server 的网络。
 
-普通用户使用预编译安装包时，不需要安装 Python，也不需要下载 SceneLoop 源码。
+普通用户使用预编译安装包时，不需要安装 Python。
 
 ### 查看 Mac 芯片架构
 
@@ -59,13 +58,12 @@ uname -m
 ```
 
 - 返回 `arm64`：使用 `sceneloop-hermes-macos-arm64.zip`。
-- 返回 `x86_64`：使用 `sceneloop-hermes-macos-x86_64.zip`。
 
 不同系统和芯片的安装包不能混用。
 
 ## 安装 Hermes
 
-推荐先从 [Hermes 官网](https://hermes-agent.nousresearch.com/) 下载 Hermes Desktop，并完成 Hermes Runtime 和 Agent 模型配置。
+推荐先从 [Hermes 官网](https://hermes-agent.nousresearch.com/) 下载 Hermes Desktop 或 Hermes CLI，并完成 Hermes Runtime 和 Agent 模型配置。
 
 在安装 SceneLoop 前，请先在 Hermes 中进行一次普通对话，确认 Hermes 能够正常工作。
 
@@ -78,12 +76,6 @@ mkdir -p "$HOME/.hermes/skills"
 unzip "$HOME/Downloads/sceneloop-hermes-macos-arm64.zip" -d "$HOME/.hermes/skills"
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop"
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
-```
-
-Intel Mac 请将 ZIP 文件名替换为：
-
-```text
-sceneloop-hermes-macos-x86_64.zip
 ```
 
 检查 Skill：
