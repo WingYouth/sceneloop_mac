@@ -1,10 +1,12 @@
-# SceneLoop 
+# SceneLoop
 
-SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用户只需向 Hermes / Openclaw 等 AI Agent 提供剧本和创作要求，SceneLoop 即可完成剧本视觉化适配、分镜规划、角色与场景资产生成、首帧生成和逐镜视频生成。
+[简体中文](README.md) | [English](README_EN.md)
+
+SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用户只需向 Hermes / OpenClaw 等 AI Agent 提供剧本和创作要求，SceneLoop 即可完成剧本视觉化适配、分镜规划、角色与场景资产生成、首帧生成和逐镜视频生成。
 
 本项目由 **西安文鳐网络信息科技有限责任公司** 开发。
 
-[访问 SceneLoop 产品官网](https://www.wenyaotech.com/products?category=aimanju&product=sceneloop)
+[访问 SceneLoop 产品官网](https://www.wenyaotech.com/products?category=autodrama&product=sceneloop)
 
 > 本文档适用于 SceneLoop Skill 的 macOS 版本。
 
@@ -34,20 +36,21 @@ SceneLoop 是一套面向 AI 漫剧与 AI 短剧生产的智能工作流。用�
   -> 视频输出
 ```
 
-Hermes 负责与用户对话、收集参数和调用 SceneLoop。文本、图片和视频的正式生产由 SceneLoop 内部配置的模型完成，Hermes 不会使用自身模型替代生产步骤。
+Hermes 或 OpenClaw 负责与用户对话、收集参数和调用 SceneLoop。文本、图片和视频的正式生产由 SceneLoop 内部配置的模型完成，Agent 不会使用自身模型替代生产步骤。
 
 ## macOS 安装要求
 
 开始前请准备：
 
 - macOS 14 或更高版本。
-- 与 Mac 芯片匹配的 SceneLoop 安装包。
-- 已安装并可正常对话的 Hermes Desktop 或 Hermes CLI。
+- 与 Mac 芯片匹配的 SceneLoop 预编译目录；当前仓库提供 Apple Silicon (`arm64`) 版本。
+- 已安装 Git，并可在终端中使用 `git` 命令。
+- 已安装并可正常对话的 Hermes Desktop、Hermes CLI 或 OpenClaw。
 - SceneLoop License Key。
 - 文本模型、图片模型和视频模型所需的 API Key。
 - 可访问模型服务和 SceneLoop License Server 的网络。
 
-普通用户使用预编译安装包时，不需要安装 Python。
+普通用户使用当前预编译版本时，不需要安装 Python。
 
 ### 查看 Mac 芯片架构
 
@@ -57,7 +60,8 @@ Hermes 负责与用户对话、收集参数和调用 SceneLoop。文本、图片
 uname -m
 ```
 
-- 返回 `arm64`：使用 `sceneloop-hermes-macos-arm64.zip`。
+- 返回 `arm64`：可以使用当前仓库中的预编译程序。
+- 返回 `x86_64`：需要获取对应的 Intel 版本，不能使用当前 `arm64` 程序。
 
 不同系统和芯片的安装包不能混用。
 
@@ -67,13 +71,25 @@ uname -m
 
 在安装 SceneLoop 前，请先在 Hermes 中进行一次普通对话，确认 Hermes 能够正常工作。
 
+## 安装 OpenClaw
+
+如果使用 OpenClaw，请先按照 [OpenClaw 官方文档](https://docs.openclaw.ai/start/getting-started) 完成安装和模型配置，并确认以下命令可用：
+
+```bash
+openclaw --version
+```
+
+Hermes 和 OpenClaw 二选一即可，不要求同时安装。
+
 ## 安装 SceneLoop Skill
 
-假设安装包位于 macOS 的“下载”目录，执行：
+### 安装到 Hermes
+
+当前 GitHub 仓库已经是解压后的 Skill 目录，执行：
 
 ```bash
 mkdir -p "$HOME/.hermes/skills"
-unzip "$HOME/Downloads/sceneloop-hermes-macos-arm64.zip" -d "$HOME/.hermes/skills"
+git clone https://github.com/WingYouth/sceneloop_mac.git "$HOME/.hermes/skills/sceneloop"
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop"
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
 ```
@@ -90,9 +106,20 @@ hermes skills list
 /reset
 ```
 
+### 安装到 OpenClaw
+
+OpenClaw 可以直接从 GitHub 安装这个已经解压的 Skill：
+
+```bash
+openclaw skills install git:WingYouth/sceneloop_mac --as sceneloop --global
+openclaw skills list
+```
+
+OpenClaw 会把全局 Skill 安装到其托管的 Skill 目录。安装后请新建 OpenClaw 会话，使新的 Skill 清单生效。安装命令和 Skill 目录规则以 [OpenClaw Skills 官方文档](https://docs.openclaw.ai/tools/skills) 为准。
+
 ## 首次设置与授权
 
-安装后无需先手动执行一串生产命令。在 Hermes 中上传剧本并提出生成请求时，SceneLoop Skill 会先自动检查运行程序、Redis、License 和模型配置；配置不完整时，Hermes 会自动启动 `sceneloop-setup`。
+安装后无需先手动执行一串生产命令。在 Hermes 或 OpenClaw 中上传剧本并提出生成请求时，SceneLoop Skill 会先自动检查运行程序、Redis、License 和模型配置；配置不完整时，Agent 会启动 `sceneloop-setup`。
 
 Setup 将依次完成：
 
@@ -104,7 +131,7 @@ Setup 将依次完成：
 6. 选择视频模型并输入对应 API Key。
 7. 验证配置并保存到本机。
 
-License Key 和 API Key 只应在本机 Setup 窗口或终端中输入，不要发送到 Hermes 聊天、飞书聊天、群聊或截图中。
+License Key 和 API Key 只应在本机 Setup 窗口或终端中输入，不要发送到 Hermes、OpenClaw、飞书、群聊或截图中。
 
 ### Setup 没有自动打开
 
@@ -124,7 +151,7 @@ License Key 和 API Key 只应在本机 Setup 窗口或终端中输入，不要�
 
 ## 第一次生成
 
-在 Hermes 中上传剧本，然后直接说明需求，例如：
+在 Hermes 或 OpenClaw 中上传剧本，然后直接说明需求，例如：
 
 ```text
 请使用 SceneLoop 将这个剧本制作成第一集 AI 漫剧。
@@ -224,6 +251,14 @@ hermes skills list
 
 确认列表中存在 `sceneloop`，然后新建 Hermes 会话或执行 `/reset`。提出任务时明确说明“使用 SceneLoop”。
 
+### OpenClaw 没有调用 SceneLoop
+
+```bash
+openclaw skills list
+```
+
+确认列表中存在 `sceneloop`，然后新建 OpenClaw 会话。提出任务时明确说明“使用 SceneLoop”。如果列表中没有该 Skill，请重新执行上面的 OpenClaw 安装命令。
+
 ### License 状态无效
 
 先确认 Redis 正常，再执行：
@@ -248,13 +283,13 @@ hermes skills list
 
 - 不要在聊天、日志、截图或公开仓库中暴露 License Key 和 API Key。
 - 不要修改或绕过 SceneLoop License 校验。
-- Hermes 只负责调度，不得使用自身模型替代 SceneLoop 的正式生产模型。
+- Hermes 或 OpenClaw 只负责调度，不得使用自身模型替代 SceneLoop 的正式生产模型。
 - 安装包不包含任何用户密钥；所有授权与模型配置均在用户本机完成。
 
 ## 关于我们
 
 SceneLoop 由 **西安文鳐网络信息科技有限责任公司** 开发并维护。
 
-- 产品官网：[SceneLoop](https://www.wenyaotech.com/products?category=aimanju&product=sceneloop)
+- 产品官网：[SceneLoop](https://www.wenyaotech.com/products?category=autodrama&product=sceneloop)
 
-Copyright © 西安文鳐网络信息科技有限责任公司. All rights reserved.
+© 2024 - 2026 西安文鳐网络信息科技有限责任公司 版权所有
