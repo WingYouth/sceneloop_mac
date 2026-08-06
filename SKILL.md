@@ -65,7 +65,9 @@ Credential readiness is a blocking gate and must run before collecting
    provider configuration is incomplete, tell the user that local SceneLoop
    authorization and model-provider setup must be completed before production.
 4. Execute the resolved `sceneloop-setup` automatically in a user-visible,
-   interactive local session. Do not ask the user to locate or launch it.
+   interactive local session. Run the executable directly in the foreground;
+   do not wrap it with shell-specific keep-open commands such as `read -p`.
+   Do not ask the user to locate or launch it.
 5. Tell the user to enter the License Key and the API Keys requested for the
    selected text, image, and video providers only inside the local setup
    prompt. Never ask the user to paste a secret into chat, Feishu, Hermes,
