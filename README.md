@@ -2,13 +2,28 @@
 
 [简体中文](README.md) | [English](README_EN.md)
 
-SceneLoop 是一套面向 AI 漫剧、AI 短剧和单图动效生产的智能工作流。用户可以向 Hermes / OpenClaw 等 AI Agent 提供剧本和创作要求，由 SceneLoop 完成剧本视觉化适配、分镜规划、角色与场景资产生成、首帧生成和逐镜视频生成；也可以只上传一张图片和动效描述，跳过剧本、角色与场景流程，直接生成图片动效视频。
+SceneLoop 是一套面向 AI 漫剧、AI 短剧、单图动效和 AI 商品广告生产的二进制智能工作流。用户可以通过 Hermes / OpenClaw 等 AI Agent 提交剧本、图片、商品素材和创作要求；发行包内的原生程序负责实际的文本、图片和视频生产。
 
 本项目由 **西安文鳐网络信息科技有限责任公司** 开发。
 
 [访问 SceneLoop 产品官网](https://www.wenyaotech.com/products?category=autodrama&product=sceneloop)
 
 > 本文档适用于 SceneLoop Skill 的 macOS 版本。
+
+## 发行包内容
+
+```text
+sceneloop_mac/
+├── README.md
+├── README_EN.md
+├── SKILL.md
+└── scripts/
+    ├── sceneloop   短剧与单图动效
+    ├── ai-ads     AI 商品广告
+    └── setup      授权与模型配置
+```
+
+三个程序都是 Apple Silicon（`arm64`）预编译二进制文件。普通用户不需要 Python、编译器或项目源码，也不应把单个程序移出当前 Skill 目录。
 
 ## 核心能力
 
@@ -22,6 +37,8 @@ SceneLoop 是一套面向 AI 漫剧、AI 短剧和单图动效生产的智能工
 - 支持“图片动效（Animate one image）”：一张上传图片加一段动作或镜头描述即可直接生成视频。
 - 支持 MiniMax H3 v5 多参考视频模型，可用于 `9:16` 和 `16:9` 图片动效及短剧镜头。
 - 图片动效会自动参考上传图片的主体、构图、色彩、光影、材质和原始风格，只执行用户明确要求的动作、局部效果或镜头运动。
+- 支持根据 1–5 张商品图片或电商页面截图制作一条 15 秒 Fast UGC 商品广告。
+- AI Ads 使用独立的 `ai-ads` 程序，保留授权确认、事实约束、断点续作以及已经成功生成的资产。
 
 ## 工作流程
 
@@ -53,6 +70,18 @@ Hermes 或 OpenClaw 负责与用户对话、收集参数和调用 SceneLoop。�
 
 该流程不会创建剧本、分镜、人物角色、场景图或镜头首帧项目。
 
+AI 商品广告使用独立流程：
+
+```text
+商品图片或页面截图 + 简短需求
+  -> 商品事实识别与广告策划
+  -> 5 个画面资产
+  -> 5 个三秒视频片段
+  -> 合成一条 15 秒 Fast UGC 预览
+```
+
+短剧、单图动效和 AI Ads 共用本机授权与模型配置，但项目数据彼此独立。
+
 ## macOS 安装要求
 
 开始前请准备：
@@ -64,6 +93,7 @@ Hermes 或 OpenClaw 负责与用户对话、收集参数和调用 SceneLoop。�
 - SceneLoop License Key。
 - 文本模型、图片模型和视频模型所需的 API Key。
 - 可访问模型服务和 SceneLoop License Server 的网络。
+- 使用 AI Ads 成片合成时，终端需要能够找到 `ffmpeg` 和 `ffprobe`。
 
 普通用户使用当前预编译版本时，不需要安装 Python。
 
@@ -106,7 +136,8 @@ Hermes 和 OpenClaw 二选一即可，不要求同时安装。
 mkdir -p "$HOME/.hermes/skills"
 git clone https://github.com/WingYouth/sceneloop_mac.git "$HOME/.hermes/skills/sceneloop"
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop"
-chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/ai-ads"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/setup"
 ```
 
 检查 Skill：
@@ -128,7 +159,7 @@ hermes skills list
 ```bash
 cd "$HOME/.hermes/skills/sceneloop"
 git pull --ff-only origin main
-chmod +x scripts/sceneloop scripts/sceneloop-setup
+chmod +x scripts/sceneloop scripts/ai-ads scripts/setup
 ```
 
 更新完成后新建 Hermes 会话，或在现有会话中执行 `/reset`。
@@ -146,17 +177,16 @@ OpenClaw 会把全局 Skill 安装到其托管的 Skill 目录。安装后请新
 
 ## 首次设置与授权
 
-安装后无需先手动执行一串生产命令。在 Hermes 或 OpenClaw 中上传剧本并提出生成请求时，SceneLoop Skill 会先自动检查运行程序、Redis、License 和模型配置；配置不完整时，Agent 会启动 `sceneloop-setup`。
+安装后无需先手动执行一串生产命令。在 Hermes 或 OpenClaw 中提出生成请求时，SceneLoop Skill 会先自动检查运行程序、Redis、License 和模型配置；配置不完整时，Agent 会启动 `setup`。
 
 Setup 将依次完成：
 
 1. 检查 macOS 基础环境。
 2. 检查 Redis；本机没有 Redis 时，通过 Homebrew 安装并设置为自动启动。
 3. 输入 SceneLoop License Key，完成本机设备绑定。
-4. 选择文本模型并输入对应 API Key。
-5. 选择图片模型并输入对应 API Key。
-6. 选择视频模型并输入对应 API Key。
-7. 验证配置并保存到本机。
+4. 选择视觉、文本、图片和视频模型。
+5. 在本机交互界面中输入对应 API Key。
+6. 验证配置并保存到本机。
 
 如果要使用 MiniMax H3 v5，请在视频模型列表中选择
 `minimax-h3-lightx2v-v5`，并只在本机 Setup 提示中输入对应的
@@ -169,7 +199,7 @@ License Key 和 API Key 只应在本机 Setup 窗口或终端中输入，不要�
 可在终端中手动运行：
 
 ```bash
-"$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
+"$HOME/.hermes/skills/sceneloop/scripts/setup"
 ```
 
 检查授权状态：
@@ -180,7 +210,7 @@ License Key 和 API Key 只应在本机 Setup 窗口或终端中输入，不要�
 
 设备绑定信息会长期保存在本机 Redis 中。运行租约到期后，SceneLoop 会使用已有绑定在线续签，正常情况下不需要再次输入 License Key。
 
-`sceneloop-setup` 通常只在一台新电脑首次安装时运行一次。日常生成不需要重复运行。只有更换电脑、License 或 Redis 数据丢失、`.env` 配置丢失，或者需要更换模型和 API Key 时，才需要再次运行 Setup。
+`setup` 通常只在一台新电脑首次安装时运行一次。日常生成不需要重复运行。只有更换电脑、License 或 Redis 数据丢失、`.env` 配置丢失，或者需要更换模型和 API Key 时，才需要再次运行 Setup。
 
 ## 第一次生成
 
@@ -225,6 +255,27 @@ Agent 会直接选择 **Animate one image**，不会再询问剧本、项目 ID�
 
 支持 1–10 秒整数时长。排队与生成合计最长等待 30 分钟，状态每秒查询一次。
 
+## 生成 AI 商品广告
+
+向 Hermes 或 OpenClaw 上传 1–5 张商品图片或电商页面截图，再说明希望制作商品广告。例如：
+
+```text
+请使用 SceneLoop 根据这张商品截图制作一条真实自然的 15 秒竖屏 UGC 广告，直接生成。
+```
+
+当前 Fast UGC 流程固定生成 5 个三秒镜头并合成为一条 15 秒预览，支持 `9:16` 和模型允许的 `16:9`。一个清晰的商品截图即可开始，用户不需要手工抄写页面上的商品名称、价格或规格。
+
+当用户授权“直接生成”时，Agent 会一次性说明并确认完整成本范围，然后由 `ai-ads` 执行商品识别、策划、图片生成、视频生成和合成。执行中断后应继续同一个项目；已经成功的资产和模型任务不会重新提交。
+
+可在终端检查 AI Ads 是否就绪：
+
+```bash
+"$HOME/.hermes/skills/sceneloop/scripts/ai-ads" readiness
+"$HOME/.hermes/skills/sceneloop/scripts/ai-ads" models
+```
+
+当前版本不用于任意时长广告、多版本批量投放、自动发布或完整后期制作。
+
 ## 常用对话示例
 
 ### 生成一集竖屏漫剧
@@ -255,6 +306,12 @@ Agent 会直接选择 **Animate one image**，不会再询问剧本、项目 ID�
 
 ```text
 请使用 SceneLoop 让这张图动起来：人物自然眨眼，衣服和头发有轻微风吹效果，镜头缓慢向前推进，保持原图画风。
+```
+
+### 生成 15 秒商品广告
+
+```text
+请使用 SceneLoop 根据这些商品图片生成一条 15 秒、9:16 的自然 UGC 广告，使用中文原生语音，直接执行。
 ```
 
 ## 输出文件
@@ -289,6 +346,16 @@ image_animation_projects/<project_id>/
 
 相同图片、提示词、模型、分辨率、时长和 Seed 的重复请求会复用已有视频；任一生成参数或提示词策略变化都会创建新的请求结果。
 
+AI Ads 项目默认保存在 Skill 的广告工作区中：
+
+```text
+workspace/ads/ads_projects/<project_id>/
+  manifest.json                    项目清单和可恢复状态
+  ...                              商品证据、策划、图片、视频与最终预览
+```
+
+不要在任务中断后删除项目目录；继续同一项目即可复用已经完成的结果。
+
 ## 常见问题
 
 ### `Permission denied`
@@ -297,7 +364,8 @@ image_animation_projects/<project_id>/
 
 ```bash
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop"
-chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/ai-ads"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/setup"
 ```
 
 ### macOS 提示程序无法验证或无法打开
@@ -315,7 +383,7 @@ brew services start redis
 redis-cli ping
 ```
 
-正常结果应为 `PONG`。如果没有安装 Homebrew，请先访问 [Homebrew 官网](https://brew.sh/) 完成安装，然后重新运行 `sceneloop-setup`。
+正常结果应为 `PONG`。如果没有安装 Homebrew，请先访问 [Homebrew 官网](https://brew.sh/) 完成安装，然后重新运行 `setup`。
 
 ### Hermes 没有调用 SceneLoop
 
@@ -341,13 +409,13 @@ openclaw skills list
 "$HOME/.hermes/skills/sceneloop/scripts/sceneloop" license verify
 ```
 
-如果设备从未激活，重新运行 `sceneloop-setup`。请勿尝试绕过或修改 License 校验。
+如果设备从未激活，重新运行 `setup`。请勿尝试绕过或修改 License 校验。
 
 ### 模型返回 401、403 或余额不足
 
 - `401`：通常表示 API Key 无效、过期或配置到了错误的模型服务商。
 - `403`：通常表示账号权限、余额或服务开通状态存在问题。
-- 修改模型配置后，重新运行 `sceneloop-setup` 完成验证。
+- 修改模型配置后，重新运行 `setup` 完成验证。
 
 ### 图片或视频生成超时
 

@@ -2,13 +2,28 @@
 
 [简体中文](README.md) | [English](README_EN.md)
 
-SceneLoop is an intelligent workflow for producing AI comics, AI short dramas, and single-image animation. Give a script and creative requirements to an AI agent such as Hermes or OpenClaw, and SceneLoop handles visual adaptation, storyboard planning, character and location assets, first frames, and shot-by-shot video generation. You can also upload one image with a motion description to generate an animated video directly, without the script, character, or location workflow.
+SceneLoop is a packaged binary workflow for producing AI comics, AI short dramas, single-image animation, and AI product ads. Submit scripts, images, product materials, and creative requirements through an AI agent such as Hermes or OpenClaw; the native programs in this distribution perform the actual text, image, and video production.
 
 SceneLoop is developed by **Xi'an Wenyao Network Information Technology Co., Ltd.**
 
 [Visit the SceneLoop product website](https://www.wenyaotech.com/products?category=autodrama&product=sceneloop)
 
 > This guide covers the macOS edition of the SceneLoop Skill.
+
+## Package Contents
+
+```text
+sceneloop_mac/
+├── README.md
+├── README_EN.md
+├── SKILL.md
+└── scripts/
+    ├── sceneloop   drama and single-image animation
+    ├── ai-ads     AI product advertising
+    └── setup      licensing and model configuration
+```
+
+All three programs are prebuilt Apple Silicon (`arm64`) binaries. Users do not need Python, a compiler, or the project source code, and should not move an individual executable out of this Skill directory.
 
 ## Features
 
@@ -22,6 +37,8 @@ SceneLoop is developed by **Xi'an Wenyao Network Information Technology Co., Ltd
 - Supports **Animate one image**: one uploaded image and a motion or camera description produce a video directly.
 - Supports the MiniMax H3 v5 multi-reference video model for `9:16` and `16:9` image animations and drama shots.
 - Automatically preserves the uploaded image's subjects, composition, colors, lighting, materials, and original visual style while applying only the motion, local effects, or camera movement explicitly requested by the user.
+- Creates one 15-second Fast UGC product ad from one to five product images or commerce-page screenshots.
+- Runs AI Ads through the separate `ai-ads` binary while preserving authorization, factual constraints, resumable state, and successful assets.
 
 ## Workflow
 
@@ -53,6 +70,18 @@ Uploaded image + motion description
 
 This workflow does not create a script, storyboard, characters, locations, or a separate shot first-frame project.
 
+AI product ads use a separate workflow:
+
+```text
+Product images or commerce screenshot + short brief
+  -> Identify grounded product facts and plan the creative
+  -> Generate five image assets
+  -> Generate five three-second video clips
+  -> Assemble one 15-second Fast UGC preview
+```
+
+Drama, image animation, and AI Ads share local licensing and model configuration, but their project data remains separate.
+
 ## macOS Requirements
 
 Before you begin, prepare:
@@ -64,6 +93,7 @@ Before you begin, prepare:
 - A SceneLoop License Key.
 - API keys required by your selected text, image, and video models.
 - Network access to the model services and SceneLoop License Server.
+- `ffmpeg` and `ffprobe` available in `PATH` when assembling AI Ads videos.
 
 Users of this prebuilt distribution do not need to install Python.
 
@@ -106,7 +136,8 @@ This GitHub repository already contains the extracted Skill directory. Run:
 mkdir -p "$HOME/.hermes/skills"
 git clone https://github.com/WingYouth/sceneloop_mac.git "$HOME/.hermes/skills/sceneloop"
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop"
-chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/ai-ads"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/setup"
 ```
 
 Check the Skill:
@@ -128,7 +159,7 @@ If SceneLoop is already installed, run:
 ```bash
 cd "$HOME/.hermes/skills/sceneloop"
 git pull --ff-only origin main
-chmod +x scripts/sceneloop scripts/sceneloop-setup
+chmod +x scripts/sceneloop scripts/ai-ads scripts/setup
 ```
 
 After updating, start a new Hermes conversation or run `/reset` in the current conversation.
@@ -146,17 +177,16 @@ OpenClaw installs a global Skill in its managed Skill directory. Start a new Ope
 
 ## First-Time Setup and Licensing
 
-You do not need to run production commands manually before using the Skill. When you upload a script and request generation in Hermes or OpenClaw, SceneLoop first checks the runtime, Redis, license, and model configuration. If setup is incomplete, the agent launches `sceneloop-setup`.
+You do not need to run production commands manually before using the Skill. When you request generation in Hermes or OpenClaw, SceneLoop first checks the runtime, Redis, license, and model configuration. If setup is incomplete, the agent launches `setup`.
 
 Setup performs these steps:
 
 1. Checks the macOS environment.
 2. Checks Redis; if it is missing, installs it through Homebrew and enables automatic startup.
 3. Activates the device with your SceneLoop License Key.
-4. Lets you select a text model and enter its API key.
-5. Lets you select an image model and enter its API key.
-6. Lets you select a video model and enter its API key.
-7. Verifies and saves the configuration locally.
+4. Lets you select Vision, Text, Image, and Video models.
+5. Collects their API keys through the local interactive interface.
+6. Verifies and saves the configuration locally.
 
 To use MiniMax H3 v5, select `minimax-h3-lightx2v-v5` from the video-model list and enter its `minimax_h3_v5` only in the local Setup prompt. Setup saves and checks the configuration but does not submit a paid video-generation task just to test this credential.
 
@@ -167,7 +197,7 @@ Enter License Keys and API keys only in the local Setup window or terminal. Neve
 Run it manually in Terminal:
 
 ```bash
-"$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
+"$HOME/.hermes/skills/sceneloop/scripts/setup"
 ```
 
 Check the license status:
@@ -180,7 +210,7 @@ If you installed the Skill through OpenClaw, use the corresponding `sceneloop/sc
 
 Device binding data remains in local Redis. When a runtime lease expires, SceneLoop renews it online using the existing binding, so you normally do not need to enter the License Key again.
 
-You normally run `sceneloop-setup` only once when installing SceneLoop on a new computer. Daily generation does not require Setup again. Rerun it only after moving to another computer, losing the License or Redis data, losing the `.env` configuration, or when changing models or API keys.
+You normally run `setup` only once when installing SceneLoop on a new computer. Daily generation does not require Setup again. Rerun it only after moving to another computer, losing the License or Redis data, losing the `.env` configuration, or when changing models or API keys.
 
 ## First Generation
 
@@ -225,6 +255,27 @@ For `minimax-h3-lightx2v-v5`, the available resolutions are:
 
 It supports whole-second durations from 1 through 10 seconds. Queueing and generation may wait for up to 30 minutes in total, with status polled once per second.
 
+## Create an AI Product Ad
+
+Upload one to five product images or commerce-page screenshots in Hermes or OpenClaw and ask for a product ad. For example:
+
+```text
+Use SceneLoop to create a natural 15-second vertical UGC ad from this product screenshot. Generate it directly.
+```
+
+The current Fast UGC workflow produces five three-second shots and assembles one 15-second preview. It supports `9:16` and model-supported `16:9`. One clear product screenshot is sufficient; users do not need to transcribe the visible product name, price, or specifications.
+
+When the user authorizes direct generation, the agent states and confirms the complete cost scope once. The `ai-ads` runtime then performs product understanding, planning, image generation, video generation, and assembly. If execution is interrupted, resume the same project; successful assets and provider tasks are not submitted again.
+
+Check AI Ads readiness from Terminal:
+
+```bash
+"$HOME/.hermes/skills/sceneloop/scripts/ai-ads" readiness
+"$HOME/.hermes/skills/sceneloop/scripts/ai-ads" models
+```
+
+The current release is not intended for arbitrary ad durations, bulk variants, automatic publishing, or complete post-production.
+
 ## Example Requests
 
 ### Vertical AI Comic Drama
@@ -255,6 +306,12 @@ Use SceneLoop to retry the failed shots in episode 1 of city_story without overw
 
 ```text
 Use SceneLoop to animate this image: make the person blink naturally, add a light breeze to the clothes and hair, and slowly push the camera forward while preserving the original visual style.
+```
+
+### Create a 15-Second Product Ad
+
+```text
+Use SceneLoop to turn these product images into a natural 15-second 9:16 UGC ad with native English speech. Run it directly.
 ```
 
 ## Output Files
@@ -289,6 +346,16 @@ image_animation_projects/<project_id>/
 
 Repeated requests with the same image, prompt, model, resolution, duration, and seed reuse the existing video. A change to any generation setting or prompt-policy version creates a new request result.
 
+AI Ads projects are stored in the Skill's ads workspace by default:
+
+```text
+workspace/ads/ads_projects/<project_id>/
+  manifest.json                    project manifest and resumable state
+  ...                              evidence, plans, images, videos, and final preview
+```
+
+Do not delete the project directory after an interrupted run. Resume the same project to reuse completed results.
+
 ## Troubleshooting
 
 ### `Permission denied`
@@ -297,7 +364,8 @@ Restore executable permissions:
 
 ```bash
 chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop"
-chmod +x "$HOME/.hermes/skills/sceneloop/scripts/sceneloop-setup"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/ai-ads"
+chmod +x "$HOME/.hermes/skills/sceneloop/scripts/setup"
 ```
 
 ### macOS Cannot Verify or Open the Program
@@ -315,7 +383,7 @@ brew services start redis
 redis-cli ping
 ```
 
-The expected result is `PONG`. If Homebrew is not installed, install it from the [Homebrew website](https://brew.sh/) and run `sceneloop-setup` again.
+The expected result is `PONG`. If Homebrew is not installed, install it from the [Homebrew website](https://brew.sh/) and run `setup` again.
 
 ### Hermes Does Not Invoke SceneLoop
 
@@ -341,13 +409,13 @@ Confirm that Redis is running, then execute:
 "$HOME/.hermes/skills/sceneloop/scripts/sceneloop" license verify
 ```
 
-If the device has never been activated, run `sceneloop-setup` again. Do not bypass or modify license validation.
+If the device has never been activated, run `setup` again. Do not bypass or modify license validation.
 
 ### Model Returns 401, 403, or Insufficient Balance
 
 - `401` usually indicates an invalid or expired API key, or a key configured for the wrong provider.
 - `403` usually indicates account permissions, insufficient balance, or a service that has not been enabled.
-- After changing model configuration, run `sceneloop-setup` again to verify it.
+- After changing model configuration, run `setup` again to verify it.
 
 ### Image or Video Generation Times Out
 
